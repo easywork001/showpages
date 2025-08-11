@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: true
 
 jobs:
@@ -25,14 +25,20 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
+      # 安装 pnpm 并安装依赖
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: true
+
+      # 构建
       - run: pnpm build
 
-      # SPA 刷新兜底 + 避免 Jekyll 忽略资源
+      # SPA 刷新兜底 + 关闭 Jekyll 干预
       - run: cp dist/index.html dist/404.html
       - run: touch dist/.nojekyll
 
+      # 提交构建产物给 Pages
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -43,31 +49,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-   steps:
-  - uses: actions/checkout@v4
-
-  - uses: actions/setup-node@v4
-    with:
-      node-version: 20
-      cache: pnpm
-
-  # 安装并激活 pnpm（不用再依赖 corepack）
-  - uses: pnpm/action-setup@v4
-    with:
-      version: 9
-      run_install: false
-
-  - name: Install deps
-    run: pnpm install --frozen-lockfile
-
-  - name: Build
-    run: pnpm build
-
-  - name: SPA fallback & nojekyll
-    run: |
-      cp dist/index.html dist/404.html
-      touch dist/.nojekyll
-
-  - uses: actions/upload-pages-artifact@v3
-    with:
-      path: dist
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
