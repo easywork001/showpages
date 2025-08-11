@@ -19,26 +19,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          cache: npm
 
-      # 安装 pnpm 并安装依赖
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: true
+      - run: npm ci || npm i
+      - run: npm run build
 
-      # 构建
-      - run: pnpm build
+      - run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
 
-      # SPA 刷新兜底 + 关闭 Jekyll 干预
-      - run: cp dist/index.html dist/404.html
-      - run: touch dist/.nojekyll
-
-      # 提交构建产物给 Pages
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
